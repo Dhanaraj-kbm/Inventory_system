@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.product import Product
 from app.schemas.product_schema import ProductCreate
+from app.core.security import require_auth
+from fastapi import Depends
 
 router = APIRouter()
 
@@ -14,7 +16,11 @@ def get_db():
         db.close()
 
 @router.post("/products")
-def create_product(product: ProductCreate, db: Session = Depends(get_db)):
+def create_product(
+    product: ProductCreate,
+    db: Session = Depends(get_db),
+    auth: str = Depends(require_auth)
+):
     db_product = Product(**product.dict())
     db.add(db_product)
     db.commit()
@@ -22,7 +28,11 @@ def create_product(product: ProductCreate, db: Session = Depends(get_db)):
     return db_product
 
 @router.get("/products")
-def get_products(db: Session = Depends(get_db)):
+def get_products(
+    db: Session = Depends(get_db),
+    auth: str = Depends(require_auth)
+):
+
     return db.query(Product).all()
 @router.put("/products/{product_id}")
 def update_product(product_id: int, product: ProductCreate, db: Session = Depends(get_db)):
