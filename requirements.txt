@@ -7,3 +7,4 @@ alembic
 passlib[bcrypt]
 python-multipart
 jinja2
+python-jose[cryptography]

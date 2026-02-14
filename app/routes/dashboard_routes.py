@@ -7,6 +7,7 @@ from app.models.invoice import Invoice, InvoiceItem
 from app.models.product import Product
 from app.core.security import require_auth
 
+
 router = APIRouter(prefix="/dashboard")
 
 def get_db():
@@ -20,8 +21,9 @@ def get_db():
 @router.get("/summary")
 def dashboard_summary(
     db: Session = Depends(get_db),
-    auth: str = Depends(require_auth)
+    user: str = Depends(require_auth)
 ):
+
 
     total_sales = db.query(func.count(Invoice.id)).scalar()
     total_revenue = db.query(func.sum(Invoice.total)).scalar() or 0
@@ -37,8 +39,9 @@ def dashboard_summary(
 @router.get("/top-products")
 def top_products(
     db: Session = Depends(get_db),
-    auth: str = Depends(require_auth)
+    user: str = Depends(require_auth)
 ):
+
 
     results = (
         db.query(

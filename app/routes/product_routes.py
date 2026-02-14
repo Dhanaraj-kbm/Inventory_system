@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
+
 from app.core.database import SessionLocal
 from app.models.product import Product
 from app.schemas.product_schema import ProductCreate
 from app.core.security import require_auth
-from fastapi import Depends
 
 router = APIRouter()
 
+# Database dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -15,27 +16,42 @@ def get_db():
     finally:
         db.close()
 
+
+# CREATE product
 @router.post("/products")
 def create_product(
     product: ProductCreate,
     db: Session = Depends(get_db),
-    auth: str = Depends(require_auth)
+    user: str = Depends(require_auth)
 ):
+
+
     db_product = Product(**product.dict())
     db.add(db_product)
     db.commit()
     db.refresh(db_product)
     return db_product
 
+
+# GET all products
 @router.get("/products")
 def get_products(
     db: Session = Depends(get_db),
-    auth: str = Depends(require_auth)
+    user: str = Depends(require_auth)
+):
+    return db.query(Product).all()
+
+
+
+# UPDATE product
+@router.put("/products/{product_id}")
+def update_product(
+    product_id: int,
+    product: ProductCreate,
+    db: Session = Depends(get_db),
+    user: str = Depends(require_auth)
 ):
 
-    return db.query(Product).all()
-@router.put("/products/{product_id}")
-def update_product(product_id: int, product: ProductCreate, db: Session = Depends(get_db)):
     db_product = db.query(Product).filter(Product.id == product_id).first()
 
     if not db_product:
@@ -48,8 +64,16 @@ def update_product(product_id: int, product: ProductCreate, db: Session = Depend
     db.refresh(db_product)
 
     return db_product
+
+
+# DELETE product
 @router.delete("/products/{product_id}")
-def delete_product(product_id: int, db: Session = Depends(get_db)):
+def delete_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    user: str = Depends(require_auth)
+):
+
     db_product = db.query(Product).filter(Product.id == product_id).first()
 
     if not db_product:
@@ -59,8 +83,17 @@ def delete_product(product_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Product deleted"}
+
+
+# UPDATE stock
 @router.patch("/products/{product_id}/stock")
-def update_stock(product_id: int, amount: int, db: Session = Depends(get_db)):
+def update_stock(
+    product_id: int,
+    amount: int,
+    db: Session = Depends(get_db),
+    user: str = Depends(require_auth)
+):
+
     db_product = db.query(Product).filter(Product.id == product_id).first()
 
     if not db_product:
