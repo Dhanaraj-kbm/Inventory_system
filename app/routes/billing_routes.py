@@ -18,7 +18,13 @@ def get_db():
 def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db)):
 
     total = 0
-    invoice = Invoice(total=0)
+
+    # ✅ FIX: include customer_name
+    invoice = Invoice(
+        customer_name=data.customer_name,
+        total=0
+    )
+
     db.add(invoice)
     db.commit()
     db.refresh(invoice)
@@ -33,6 +39,7 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db)):
         if product.stock < item.quantity:
             return {"error": f"Not enough stock for {product.name}"}
 
+        # reduce stock
         product.stock -= item.quantity
 
         subtotal = product.price * item.quantity
@@ -46,10 +53,52 @@ def create_invoice(data: InvoiceCreate, db: Session = Depends(get_db)):
 
         db.add(db_item)
 
+    # update invoice total
     invoice.total = total
+
     db.commit()
+    db.refresh(invoice)
 
     return {
         "invoice_id": invoice.id,
-        "total": total
+        "customer_name": invoice.customer_name,
+        "total": invoice.total
     }
+@router.get("/invoices")
+def get_invoices(db: Session = Depends(get_db)):
+
+    invoices = db.query(Invoice).all()
+
+    result = []
+
+    for invoice in invoices:
+
+        items = db.query(InvoiceItem).filter(
+            InvoiceItem.invoice_id == invoice.id
+        ).all()
+
+        item_list = []
+
+        for item in items:
+
+            product = db.query(Product).filter(
+                Product.id == item.product_id
+            ).first()
+
+            item_list.append({
+                "product_id": item.product_id,
+                "product_name": product.name,
+                "quantity": item.quantity,
+                "price": product.price,
+                "subtotal": product.price * item.quantity
+            })
+
+        result.append({
+            "invoice_id": invoice.id,
+            "customer_name": invoice.customer_name,
+            "total": invoice.total,
+            "items": item_list,
+            "created_at": invoice.created_at
+        })
+
+    return result

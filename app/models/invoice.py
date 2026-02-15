@@ -27,3 +27,6 @@ class InvoiceItem(Base):
     price = Column(Float)
 
     invoice = relationship("Invoice", back_populates="items")
+
+    # ADD THIS LINE ↓↓↓
+    product = relationship("Product", back_populates="invoice_items")

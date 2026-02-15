@@ -11,6 +11,9 @@ from app.routes.supplier_routes import router as supplier_router
 from app.models.user import User
 from app.routes.auth_routes import router as auth_router
 from app.routes.dashboard_routes import router as dashboard_router
+from app.models import invoice
+from app.routes.invoice_routes import router as invoice_router
+
 
 
 # 👉 CREATE APP FIRST
@@ -27,7 +30,7 @@ app.include_router(billing_router)
 app.include_router(supplier_router)
 app.include_router(auth_router)
 app.include_router(dashboard_router)
-
+app.include_router(invoice_router)
 
 @app.get("/")
 def home():
