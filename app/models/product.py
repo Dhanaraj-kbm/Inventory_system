@@ -7,10 +7,18 @@ class Product(Base):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
-    price = Column(Float)
-    stock = Column(Integer)
 
-    # ADD THIS ↓↓↓ (CRITICAL)
+    name = Column(String, nullable=False)
+
+    price = Column(Float, nullable=False)
+
+    stock = Column(Integer, default=0)
+
+    sku = Column(String, unique=True, index=True)
+
+    # ⭐ ADD THIS LINE
+    barcode = Column(String, unique=True, index=True, nullable=True)
+
+    category = Column(String)
+
     invoice_items = relationship("InvoiceItem", back_populates="product")
-
