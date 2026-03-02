@@ -67,6 +67,8 @@ def create_product_by_scan(
     db: Session = Depends(get_db)
 ):
 
+    print("SCAN ENDPOINT HIT:", data.barcode)
+
     barcode = data.barcode
 
     existing = db.query(Product).filter(
@@ -79,8 +81,8 @@ def create_product_by_scan(
     new_product = Product(
         name=f"Product-{barcode[-4:]}",
         barcode=barcode,
-        price=0,
-        stock=0,
+        price=None,
+        stock=None,
         sku=f"SKU-{barcode}",
         category="Uncategorized"
     )

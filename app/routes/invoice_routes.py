@@ -9,7 +9,6 @@ from app.schemas.invoice_schema import InvoiceCreate
 from app.utils.pdf_generator import generate_invoice_pdf
 from app.utils.invoice_number import generate_invoice_number
 
-
 router = APIRouter()
 
 
@@ -19,7 +18,6 @@ router = APIRouter()
 @router.post("/invoice")
 def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
 
-    # Generate professional invoice number
     invoice_number = generate_invoice_number(db)
 
     db_invoice = Invoice(
@@ -32,10 +30,10 @@ def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
     db.flush()
 
     total = 0
+    warnings = []   # 🔥 collect stock warnings
 
     for item in invoice.items:
 
-        # ⭐ FIND PRODUCT USING BARCODE
         product = db.query(Product).filter(
             Product.barcode == item.barcode
         ).first()
@@ -46,16 +44,26 @@ def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
                 detail=f"Product with barcode {item.barcode} not found"
             )
 
-        if product.stock < item.quantity:
+        # 🔥 PRICE VALIDATION (still required)
+        if product.price is None or product.price <= 0:
             raise HTTPException(
                 status_code=400,
-                detail=f"Not enough stock for {product.name}"
+                detail=f"Product {product.name} has no price set"
+            )
+
+        # 🔥 LOW STOCK WARNING (no blocking)
+        if product.stock is None:
+            product.stock = 0
+
+        if product.stock < item.quantity:
+            warnings.append(
+                f"Low stock: {product.name} (Remaining after sale: {product.stock - item.quantity})"
             )
 
         line_total = product.price * item.quantity
 
         db_item = InvoiceItem(
-            invoice=db_invoice,     # safer relationship usage
+            invoice=db_invoice,
             product_id=product.id,
             quantity=item.quantity,
             price=product.price
@@ -63,16 +71,12 @@ def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
 
         db.add(db_item)
 
-        # reduce stock
         product.stock -= item.quantity
-
         total += line_total
 
     db_invoice.total = total
 
-    # SINGLE COMMIT
     db.commit()
-
     db.refresh(db_invoice)
 
     return {
@@ -80,6 +84,7 @@ def create_invoice(invoice: InvoiceCreate, db: Session = Depends(get_db)):
         "invoice_number": db_invoice.invoice_number,
         "customer_name": db_invoice.customer_name,
         "total": total,
+        "warnings": warnings,   # 🔥 return warnings
         "message": "Invoice created successfully"
     }
 
@@ -143,6 +148,7 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
         "items": result_items
     }
 
+
 # ========================================
 # DOWNLOAD PDF
 # ========================================
@@ -198,7 +204,6 @@ def delete_invoice(invoice_id: int, db: Session = Depends(get_db)):
         InvoiceItem.invoice_id == invoice_id
     ).all()
 
-    # restore stock
     for item in items:
 
         product = db.query(Product).filter(
@@ -206,16 +211,16 @@ def delete_invoice(invoice_id: int, db: Session = Depends(get_db)):
         ).first()
 
         if product:
+            if product.stock is None:
+                product.stock = 0
+
             product.stock += item.quantity
 
-    # delete items
     db.query(InvoiceItem).filter(
         InvoiceItem.invoice_id == invoice_id
     ).delete()
 
-    # delete invoice
     db.delete(invoice)
-
     db.commit()
 
     return {
