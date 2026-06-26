@@ -2,9 +2,11 @@ fastapi
 uvicorn
 sqlalchemy
 pydantic
+email-validator
 python-dotenv
 alembic
 passlib[bcrypt]
 python-multipart
 jinja2
 python-jose[cryptography]
+reportlab
