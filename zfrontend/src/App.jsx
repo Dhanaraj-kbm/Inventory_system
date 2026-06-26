@@ -592,9 +592,21 @@ function DashboardPage({ goHistory, goPOS }) {
             <div style={metricScrollStyle}>
               <DashboardStat
                 accent="#bff5ec"
-                label="Revenue"
+                label="Total Revenue"
                 value={`₹ ${summary.total_revenue.toFixed(2)}`}
-                note="Total billed"
+                note="Lifetime billed"
+              />
+              <DashboardStat
+                accent="#e0f2fe"
+                label="Today's Revenue"
+                value={`₹ ${summary.today_revenue.toFixed(2)}`}
+                note="Since midnight"
+              />
+              <DashboardStat
+                accent="#fef3c7"
+                label="This Month"
+                value={`₹ ${summary.this_month_revenue.toFixed(2)}`}
+                note="Since 1st of month"
               />
               <DashboardStat
                 accent="#c9f8dd"

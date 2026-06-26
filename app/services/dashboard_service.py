@@ -11,8 +11,14 @@ LOW_STOCK_THRESHOLD = 10
 
 
 def get_summary(db: Session):
+    now = datetime.utcnow()
+    today_start = datetime.combine(now.date(), datetime.min.time())
+    month_start = datetime(now.year, now.month, 1)
+
     total_sales = db.query(func.count(Invoice.id)).scalar() or 0
     total_revenue = db.query(func.coalesce(func.sum(Invoice.total), 0)).scalar() or 0
+    today_revenue = db.query(func.coalesce(func.sum(Invoice.total), 0)).filter(Invoice.created_at >= today_start).scalar() or 0
+    this_month_revenue = db.query(func.coalesce(func.sum(Invoice.total), 0)).filter(Invoice.created_at >= month_start).scalar() or 0
     total_products = db.query(func.count(Product.id)).scalar() or 0
     low_stock_products = (
         db.query(func.count(Product.id))
@@ -24,6 +30,8 @@ def get_summary(db: Session):
     return {
         "total_sales": total_sales,
         "total_revenue": float(total_revenue),
+        "today_revenue": float(today_revenue),
+        "this_month_revenue": float(this_month_revenue),
         "total_products": total_products,
         "low_stock_products": low_stock_products,
     }
