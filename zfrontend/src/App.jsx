@@ -1,7 +1,7 @@
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { useState, useRef, useEffect } from "react";
 
-const API = "http://10.57.75.58:8000";
+const API = "http://localhost:8000";
 
 function App() {
   const [page, setPage] = useState("dashboard");
